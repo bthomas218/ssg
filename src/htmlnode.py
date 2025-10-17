@@ -26,3 +26,24 @@ class HtmlNode:
     
     def __repr__(self):
         return f"HtmlNode(tag={self.tag!r}, value={self.value!r}, children={self.children!r}, props={self.props!r})"
+
+"""Representation of a Leaf Node in an HTML document tree
+@tag: The HTML tag (e.g., 'div', 'p', etc.).
+@value: The text value inside the HTML tag.
+@children: Cannot have children (always None).
+@props: Dictionary of HTML properties/attributes for the tag.
+"""
+@dataclass
+class LeafNode(HtmlNode):
+    value: str 
+    tag: str = None
+    children: None = None
+
+    # Renders the leaf node as HTML
+    def to_html(self):
+        props_str = self.props_to_html()
+        if props_str:
+            return f"<{self.tag} {props_str}>{self.value}</{self.tag}>"
+        else:
+            return f"<{self.tag}>{self.value}</{self.tag}>"
+
