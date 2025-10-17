@@ -29,13 +29,13 @@ class HtmlNode:
 
 """Representation of a Leaf Node in an HTML document tree
 @tag: The HTML tag (e.g., 'div', 'p', etc.).
-@value: Required text value inside the HTML tag.
+@value: Text value inside the HTML tag.
 @children: Cannot have children (always None).
 @props: Dictionary of HTML properties/attributes for the tag.
 """
 @dataclass
 class LeafNode(HtmlNode):
-    value: str 
+    value: str = None
     tag: str = None
     children: None = None
 

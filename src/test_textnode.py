@@ -5,7 +5,7 @@ import unittest
 # Ensure the workspace `src` directory is importable when running this file
 sys.path.insert(0, os.path.dirname(__file__))
 
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
 
 
 class TestTextNode(unittest.TestCase):
@@ -36,6 +36,52 @@ class TestTextNode(unittest.TestCase):
         node2 = TextNode("no url", TextType.PLAIN, url=None)
         self.assertEqual(node, node2)
         self.assertIsNone(node.url)
+
+    # Tests for conversion to HTML
+    def test_plain(self):
+        node = TextNode("This is a text node", TextType.PLAIN)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, None)
+        self.assertEqual(html_node.value, "This is a text node")
+
+    def test_bold_conversion(self):
+        node = TextNode("bold", TextType.BOLD)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "b")
+        self.assertEqual(html_node.value, "bold")
+
+    def test_italic_conversion(self):
+        node = TextNode("it", TextType.ITALIC)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "i")
+        self.assertEqual(html_node.value, "it")
+
+    def test_code_conversion(self):
+        node = TextNode("x=1", TextType.CODE_TEXT)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "code")
+        self.assertEqual(html_node.value, "x=1")
+
+    def test_link_conversion(self):
+        node = TextNode("click", TextType.LINK, url="https://example.com")
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "a")
+        self.assertEqual(html_node.value, "click")
+        self.assertEqual(html_node.props, {"href": "https://example.com"})
+
+    def test_image_conversion(self):
+        node = TextNode("alt text", TextType.IMAGE, url="/img.png")
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "img")
+        # images store alt in props and value may be None
+        self.assertEqual(html_node.props, {"src": "/img.png", "alt": "alt text"})
+
+    def test_unsupported_type_raises(self):
+        class FakeType:
+            pass
+        node = TextNode("x", FakeType())
+        with self.assertRaises(ValueError):
+            text_node_to_html_node(node)
 
 
 if __name__ == "__main__":
