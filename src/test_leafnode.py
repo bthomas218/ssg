@@ -5,7 +5,7 @@ import unittest
 # Ensure local src directory is importable
 sys.path.insert(0, os.path.dirname(__file__))
 
-from htmlnode import HtmlNode, LeafNode
+from htmlnode import LeafNode
 
 class TestLeafNode(unittest.TestCase):
     def test_leaf_to_html_p(self):
