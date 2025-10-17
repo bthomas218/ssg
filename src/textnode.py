@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 
+
 class TextType(Enum):
     PLAIN = "plain"
     BOLD = "bold"
@@ -9,11 +10,18 @@ class TextType(Enum):
     LINK = "link"
     IMAGE = "image"
 
+
+"""Representation of a piece of text with a type and optional URL.
+@text: The text content.
+@text_type: The type of text (from TextType).
+@url: Optional URL associated with the text (for links/images).
+"""
 @dataclass
 class TextNode:
-    def __init__(self, text: str, text_type: TextType, url: str= None):
-        self.text = text
-        self.text_type = text_type
-        self.url = url  # Used for links and images
+    
+    text: str
+    text_type: TextType
+    url: str = None
+
     def __repr__(self):
-        return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
+        return f"TextNode({self.text!r}, {self.text_type.value!r}, {self.url!r})"
