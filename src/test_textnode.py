@@ -5,7 +5,7 @@ import unittest
 # Ensure the workspace `src` directory is importable when running this file
 sys.path.insert(0, os.path.dirname(__file__))
 
-from textnode import TextNode, TextType, text_node_to_html_node
+from textnode import TextNode, TextType, text_node_to_html_node, split_nodes_delimiter
 
 
 class TestTextNode(unittest.TestCase):
@@ -82,7 +82,52 @@ class TestTextNode(unittest.TestCase):
         node = TextNode("x", FakeType())
         with self.assertRaises(ValueError):
             text_node_to_html_node(node)
+    
+    def test_split_code_block_single(self):
+        node = TextNode("This is text with a `code block` word", TextType.PLAIN)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE_TEXT)
+        expected_nodes = [
+            TextNode("This is text with a ", TextType.PLAIN),
+            TextNode("code block", TextType.CODE_TEXT),
+            TextNode(" word", TextType.PLAIN),
+        ]
+        self.assertEqual(new_nodes, expected_nodes)
 
+    def test_split_multiple_code_blocks(self):
+        node = TextNode("pre `a` mid `b` end", TextType.PLAIN)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE_TEXT)
+        expected = [
+            TextNode("pre ", TextType.PLAIN),
+            TextNode("a", TextType.CODE_TEXT),
+            TextNode(" mid ", TextType.PLAIN),
+            TextNode("b", TextType.CODE_TEXT),
+            TextNode(" end", TextType.PLAIN),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_unmatched_delimiter_raises(self):
+        node = TextNode("this has `unmatched", TextType.PLAIN)
+        with self.assertRaises(Exception):
+            split_nodes_delimiter([node], "`", TextType.CODE_TEXT)
+
+    def test_non_plain_nodes_are_preserved(self):
+        # Non-PLAIN nodes should be passed through unchanged
+        bold = TextNode("bold", TextType.BOLD)
+        result = split_nodes_delimiter([bold], "`", TextType.CODE_TEXT)
+        self.assertEqual(result, [bold])
+
+    def test_empty_between_delimiters_skipped(self):
+        node = TextNode("start``end", TextType.PLAIN)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE_TEXT)
+        # The empty part between the two delimiters should be skipped
+        expected = [TextNode("start", TextType.PLAIN), TextNode("end", TextType.PLAIN)]
+        self.assertEqual(new_nodes, expected)
+
+    def test_delimiter_with_multiple_chars(self):
+        node = TextNode("a **b** c", TextType.PLAIN)
+        new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
+        expected = [TextNode("a ", TextType.PLAIN), TextNode("b", TextType.BOLD), TextNode(" c", TextType.PLAIN)]
+        self.assertEqual(new_nodes, expected)
 
 if __name__ == "__main__":
     unittest.main()
