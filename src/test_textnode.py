@@ -5,7 +5,15 @@ import unittest
 # Ensure the workspace `src` directory is importable when running this file
 sys.path.insert(0, os.path.dirname(__file__))
 
-from textnode import TextNode, TextType, text_node_to_html_node, split_nodes_delimiter
+from textnode import (
+    TextNode,
+    TextType,
+    text_node_to_html_node,
+    split_nodes_delimiter,
+    split_nodes_images,
+    split_nodes_links,
+    text_to_textnodes
+)
 
 
 class TestTextNode(unittest.TestCase):
@@ -128,6 +136,90 @@ class TestTextNode(unittest.TestCase):
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         expected = [TextNode("a ", TextType.PLAIN), TextNode("b", TextType.BOLD), TextNode(" c", TextType.PLAIN)]
         self.assertEqual(new_nodes, expected)
+
+    def test_split_images(self):
+        node = TextNode(
+        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+        TextType.PLAIN,
+        )
+        new_nodes = split_nodes_images([node])
+        self.assertListEqual(
+        [
+            TextNode("This is text with an ", TextType.PLAIN),
+            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(" and another ", TextType.PLAIN),
+            TextNode(
+                "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+            ),
+        ],
+        new_nodes,
+        )
+
+    def test_split_images_empty_alt(self):
+        node = TextNode("before ![](img.png) after", TextType.PLAIN)
+        new_nodes = split_nodes_images([node])
+        self.assertEqual(
+            new_nodes,
+            [TextNode("before ", TextType.PLAIN), TextNode("", TextType.IMAGE, "img.png"), TextNode(" after", TextType.PLAIN)],
+        )
+
+    def test_split_links(self):
+        node = TextNode("See [here](http://a) and [there](http://b)", TextType.PLAIN)
+        new_nodes = split_nodes_links([node])
+        self.assertEqual(
+            new_nodes,
+            [
+                TextNode("See ", TextType.PLAIN),
+                TextNode("here", TextType.LINK, "http://a"),
+                TextNode(" and ", TextType.PLAIN),
+                TextNode("there", TextType.LINK, "http://b"),
+            ],
+        )
+
+    def test_split_links_no_match(self):
+        node = TextNode("no links here", TextType.PLAIN)
+        self.assertEqual(split_nodes_links([node]), [node])
+
+    def test_split_links_non_plain_preserved(self):
+        node = TextNode("x", TextType.BOLD)
+        self.assertEqual(split_nodes_links([node]), [node])
+    
+    def test_text_to_textnodes(self):
+        text = "This is **bold** and `code` with a [link](http://example.com) and an ![image](img.png)."
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.PLAIN),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" and ", TextType.PLAIN),
+            TextNode("code", TextType.CODE_TEXT),
+            TextNode(" with a ", TextType.PLAIN),
+            TextNode("link", TextType.LINK, "http://example.com"),
+            TextNode(" and an ", TextType.PLAIN),
+            TextNode("image", TextType.IMAGE, "img.png"),
+            TextNode(".", TextType.PLAIN),
+        ]
+        self.assertEqual(nodes, expected)
+
+    def test_text_to_textnodes_underscores_and_adjacent(self):
+        text = "_u1_**b**`c``d`"
+        nodes = text_to_textnodes(text)
+        # expected: u1 as bold (underscore), b as bold (double star), c as code, then d as code with empty plain in between handled
+        self.assertTrue(any(n.text == "u1" and n.text_type == TextType.BOLD for n in nodes))
+        self.assertTrue(any(n.text == "b" and n.text_type == TextType.BOLD for n in nodes))
+        self.assertTrue(any(n.text == "c" and n.text_type == TextType.CODE_TEXT for n in nodes))
+
+    def test_text_to_textnodes_only_image_or_link(self):
+        text = "![alt](i.png)"
+        nodes = text_to_textnodes(text)
+        self.assertEqual(nodes, [TextNode("alt", TextType.IMAGE, "i.png")])
+
+        text2 = "[t](u)"
+        nodes2 = text_to_textnodes(text2)
+        self.assertEqual(nodes2, [TextNode("t", TextType.LINK, "u")])
+
+    def test_text_to_textnodes_empty(self):
+        # Current implementation returns an empty list for empty input
+        self.assertEqual(text_to_textnodes("") , [])
 
 if __name__ == "__main__":
     unittest.main()

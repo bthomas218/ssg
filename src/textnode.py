@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from htmlnode import LeafNode
+from extract_markdown import extract_markdown_links, extract_markdown_images
 
 
 class TextType(Enum):
@@ -69,3 +70,78 @@ def split_nodes_delimiter(old_nodes: TextNode, delimiter: str, text_type: TextTy
                 new_nodes.append(TextNode(part, text_type))
     return new_nodes
 
+def split_nodes_images(old_nodes: list[TextNode]) -> list[TextNode]:
+    """Splits TextNodes containing markdown image syntax into multiple TextNodes.
+    @old_nodes: The original TextNodes to split
+    """
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.PLAIN:
+            new_nodes.append(node)
+            continue
+        extracted = extract_markdown_images(node.text)
+        if not extracted:
+            new_nodes.append(node)
+            continue
+        # Walk through the text and consume matches in order to preserve surrounding text
+        text = node.text
+        cursor = 0
+        for alt_text, image_link in extracted:
+            marker = f"![{alt_text}]({image_link})"
+            idx = text.find(marker, cursor)
+            if idx == -1:
+                # fallback: skip if not found
+                continue
+            pre_text = text[cursor:idx]
+            if pre_text:
+                new_nodes.append(TextNode(pre_text, TextType.PLAIN))
+            new_nodes.append(TextNode(alt_text, TextType.IMAGE, url=image_link))
+            cursor = idx + len(marker)
+        # append any remaining tail
+        tail = text[cursor:]
+        if tail:
+            new_nodes.append(TextNode(tail, TextType.PLAIN))
+    return new_nodes
+
+def split_nodes_links(old_nodes: list[TextNode]) -> list[TextNode]:
+    """Splits TextNodes containing markdown link syntax into multiple TextNodes.
+    @old_nodes: The original TextNodes to split
+    """
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.PLAIN:
+            new_nodes.append(node)
+            continue
+        extracted = extract_markdown_links(node.text)
+        if not extracted:
+            new_nodes.append(node)
+            continue
+        # Consume matches in order so multiple links are handled correctly
+        text = node.text
+        cursor = 0
+        for link_text, url in extracted:
+            marker = f"[{link_text}]({url})"
+            idx = text.find(marker, cursor)
+            if idx == -1:
+                continue
+            pre_text = text[cursor:idx]
+            if pre_text:
+                new_nodes.append(TextNode(pre_text, TextType.PLAIN))
+            new_nodes.append(TextNode(link_text, TextType.LINK, url=url))
+            cursor = idx + len(marker)
+        tail = text[cursor:]
+        if tail:
+            new_nodes.append(TextNode(tail, TextType.PLAIN))
+    return new_nodes
+
+def text_to_textnodes(text: str) -> list[TextNode]:
+    """Converts a markdown text string into a list of TextNodes, handling images and links.
+    @text: The input text string.
+    """
+    initial_node = TextNode(text, TextType.PLAIN)
+    nodes = split_nodes_delimiter([initial_node], '**', TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, '_', TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, '`', TextType.CODE_TEXT)
+    nodes = split_nodes_links(nodes)
+    nodes = split_nodes_images(nodes)
+    return nodes
