@@ -204,7 +204,7 @@ class TestTextNode(unittest.TestCase):
         text = "_u1_**b**`c``d`"
         nodes = text_to_textnodes(text)
         # expected: u1 as bold (underscore), b as bold (double star), c as code, then d as code with empty plain in between handled
-        self.assertTrue(any(n.text == "u1" and n.text_type == TextType.BOLD for n in nodes))
+        self.assertTrue(any(n.text == "u1" and n.text_type == TextType.ITALIC for n in nodes))
         self.assertTrue(any(n.text == "b" and n.text_type == TextType.BOLD for n in nodes))
         self.assertTrue(any(n.text == "c" and n.text_type == TextType.CODE_TEXT for n in nodes))
 

@@ -44,8 +44,10 @@ class LeafNode(HtmlNode):
         props_str = self.props_to_html()
         if props_str:
             return f"<{self.tag} {props_str}>{self.value}</{self.tag}>"
-        else:
+        elif self.tag:
             return f"<{self.tag}>{self.value}</{self.tag}>"
+        else:
+            return self.value
 
 """Representation of a Parent Node in an HTML document tree
 @tag: Required HTML tag (e.g., 'div', 'p', etc.).
