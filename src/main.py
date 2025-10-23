@@ -70,7 +70,7 @@ def main():
     if len(sys.argv) > 1:
         basepath = sys.argv[1]
         print(f"Using base path from command line: {basepath}")
-    rm_cp_files(Path("static"), Path("public"))
+    rm_cp_files(Path("static"), Path("docs"))
     generate_page_recursive(
         src=Path("content"),
         template_path=Path("template.html"),
