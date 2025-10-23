@@ -1,4 +1,5 @@
 import shutil
+import sys
 from pathlib import Path
 from markdown_to_html import markdown_to_html_node
 from extract_markdown import extract_title
@@ -26,12 +27,13 @@ def rm_cp_files(src: Path, dest: Path):
                 
     recurse_copy(src, dest)
 
-def generate_page(src: Path, template_path: Path, dest: Path, ):
+def generate_page(src: Path, template_path: Path, dest: Path, basepath: str = "/"):
     """Generates an HTML page from a markdown source and an HTML template.
     Args:
         src (Path): Path to the markdown source file.
         template_path (Path): Path to the HTML template file.
         dest (Path): Path to the output HTML file.
+        basepath (str): Base path for adjusting relative links in the HTML.
     """
     print(f"Generating page from {src} using template {template_path} to {dest}")
     markdown, template = None, None
@@ -45,28 +47,35 @@ def generate_page(src: Path, template_path: Path, dest: Path, ):
     html_content = root.to_html()
     title = extract_title(markdown)
     final_html = template.replace("{{ Content }}", html_content).replace("{{ Title }}", title)
+    final_html = final_html.replace('href="/', f'href="{basepath}').replace('src="/', f'src="{basepath}')
     with dest.open("w", encoding="utf-8") as f:
         f.write(final_html)
 
-def generate_page_recursive(src: Path, template_path: Path, dest: Path):
+def generate_page_recursive(src: Path, template_path: Path, dest: Path, basepath: str = "/"):
     """Generates HTML pages for all markdown files in src directory recursively.
     Args:
         src (Path): Source directory containing markdown files.
         template_path (Path): Path to the HTML template file.
         dest (Path): Destination directory for output HTML files.
+        basepath (str): Base path for adjusting relative links in the HTML.
     """
     for md_file in src.rglob("*.md"):
         relative_path = md_file.relative_to(src).with_suffix(".html")
         output_path = dest / relative_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        generate_page(md_file, template_path, output_path)
+        generate_page(md_file, template_path, output_path, basepath=basepath)
 
 def main():
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+        print(f"Using base path from command line: {basepath}")
     rm_cp_files(Path("static"), Path("public"))
     generate_page_recursive(
         src=Path("content"),
         template_path=Path("template.html"),
-        dest=Path("public"),
+        dest=Path("docs"),
+        basepath=basepath,
     )
 if __name__ == "__main__":
     main()
