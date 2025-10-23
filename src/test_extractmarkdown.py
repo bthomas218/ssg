@@ -5,7 +5,7 @@ import unittest
 # Ensure local src directory is importable
 sys.path.insert(0, os.path.dirname(__file__))
 
-from extract_markdown import extract_markdown_images, extract_markdown_links
+from extract_markdown import extract_markdown_images, extract_markdown_links, extract_title
 
 class TestExtractMarkdown(unittest.TestCase):
     def test_extract_markdown_images(self):
@@ -44,5 +44,21 @@ class TestExtractMarkdown(unittest.TestCase):
         # URLs include the title portion in our simple regex, so verify capturing behavior
         self.assertTrue(len(links) == 1)
         self.assertTrue(len(imgs) == 1)
+
+    def test_extract_title_basic(self):
+        md = "# My Title\n\nContent"
+        self.assertEqual(extract_title(md), "My Title")
+
+    def test_extract_title_strips_and_first_header(self):
+        md = "   #   Spaced Title   \n# Other\n"
+        self.assertEqual(extract_title(md), "Spaced Title")
+
+    def test_extract_title_trailing_hashes(self):
+        md = "# Title ###\n"
+        self.assertEqual(extract_title(md), "Title ###")
+
+    def test_extract_title_no_header_raises(self):
+        with self.assertRaises(ValueError):
+            extract_title("No headings here\nJust text")
     
     
