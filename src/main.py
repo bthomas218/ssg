@@ -27,6 +27,12 @@ def rm_cp_files(src: Path, dest: Path):
     recurse_copy(src, dest)
 
 def generate_page(src: Path, template_path: Path, dest: Path, ):
+    """Generates an HTML page from a markdown source and an HTML template.
+    Args:
+        src (Path): Path to the markdown source file.
+        template_path (Path): Path to the HTML template file.
+        dest (Path): Path to the output HTML file.
+    """
     print(f"Generating page from {src} using template {template_path} to {dest}")
     markdown, template = None, None
     with src.open("r", encoding="utf-8") as f:
@@ -42,12 +48,25 @@ def generate_page(src: Path, template_path: Path, dest: Path, ):
     with dest.open("w", encoding="utf-8") as f:
         f.write(final_html)
 
+def generate_page_recursive(src: Path, template_path: Path, dest: Path):
+    """Generates HTML pages for all markdown files in src directory recursively.
+    Args:
+        src (Path): Source directory containing markdown files.
+        template_path (Path): Path to the HTML template file.
+        dest (Path): Destination directory for output HTML files.
+    """
+    for md_file in src.rglob("*.md"):
+        relative_path = md_file.relative_to(src).with_suffix(".html")
+        output_path = dest / relative_path
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        generate_page(md_file, template_path, output_path)
+
 def main():
     rm_cp_files(Path("static"), Path("public"))
-    generate_page(
-        src=Path("content/index.md"),
+    generate_page_recursive(
+        src=Path("content"),
         template_path=Path("template.html"),
-        dest=Path("public/index.html"),
+        dest=Path("public"),
     )
 if __name__ == "__main__":
     main()
