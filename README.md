@@ -1,6 +1,6 @@
 # ssg (Static Site Generator)
 
-Command Line tool to turn markdown into html files. Check out the live demo here ![]()
+Command Line tool to turn markdown into html files. Check out the live demo [here](https://bthomas218.github.io/ssg/)
 
 ## Description
 
